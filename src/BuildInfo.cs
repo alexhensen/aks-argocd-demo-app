@@ -9,6 +9,7 @@ public sealed record BuildInfo(
     string PullRequest,
     string CommitSha,
     string ImageTag,
+    string PodName,
     string Accent)
 {
     public static BuildInfo FromEnvironment()
@@ -20,6 +21,7 @@ public sealed record BuildInfo(
             pullRequest,
             Read("COMMIT_SHA", "unknown"),
             Read("IMAGE_TAG", "dev"),
+            Read("POD_NAME", Environment.MachineName),
             Read("ACCENT_COLOR", AccentFor(pullRequest)));
     }
 
