@@ -56,7 +56,6 @@ jobs:
           push: true
           tags: |
             ${{ env.IMAGE }}:${{ steps.tag.outputs.tag }}
-            ${{ github.event_name == 'push' && format('{0}:latest', env.IMAGE) || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
@@ -85,3 +84,30 @@ jobs:
           | Image | \`${{ steps.tag.outputs.tag }}\` |
 
           Argo CD rolt deze commit uit; de omgeving verdwijnt automatisch zodra deze PR sluit."
+
+  # CI heeft geen toegang tot het cluster. De enige manier waarop een nieuwe
+  # versie op main terechtkomt is een commit in de GitOps repository.
+  promote:
+    if: github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout GitOps repository
+        uses: actions/checkout@v4
+        with:
+          repository: alexhensen/aks-argocd-demo-gitops
+          token: ${{ secrets.GITOPS_TOKEN }}
+
+      - name: Pin main environment to this commit
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          sed -i "s|tag: sha-.*|tag: sha-$SHA|" bootstrap/application-main.yaml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet; then
+            echo "Geen wijziging nodig."
+            exit 0
+          fi
+          git commit -am "Promoveer ${SHA:0:7} naar main"
+          git push
