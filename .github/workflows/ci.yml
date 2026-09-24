@@ -74,7 +74,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR: ${{ github.event.pull_request.number }}
         run: |
-          URL="http://pr-$PR.${{ vars.PREVIEW_DOMAIN }}"
+          URL="https://pr-$PR.${{ vars.PREVIEW_DOMAIN }}"
           gh pr comment "$PR" --repo "${{ github.repository }}" --edit-last --create-if-none --body \
             "### Preview omgeving
 
