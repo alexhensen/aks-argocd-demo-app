@@ -14,12 +14,13 @@ public sealed record BuildInfo(
     public static BuildInfo FromEnvironment()
     {
         var environmentName = Read("ENVIRONMENT_NAME", "local");
+        var pullRequest = Read("PULL_REQUEST", "-");
         return new BuildInfo(
             environmentName,
-            Read("PULL_REQUEST", "-"),
+            pullRequest,
             Read("COMMIT_SHA", "unknown"),
             Read("IMAGE_TAG", "dev"),
-            Read("ACCENT_COLOR", AccentFor(environmentName)));
+            Read("ACCENT_COLOR", AccentFor(pullRequest)));
     }
 
     private static string Read(string key, string fallback)
@@ -29,18 +30,18 @@ public sealed record BuildInfo(
     }
 
     /// <summary>
-    /// Derives a stable colour from the environment name so two preview environments
-    /// are instantly distinguishable side by side on a projector.
+    /// Derives a stable colour per pull request so two preview environments are
+    /// instantly distinguishable side by side on a projector. Permanent
+    /// environments keep one fixed colour to contrast with every preview.
     /// </summary>
-    private static string AccentFor(string environmentName)
+    private static string AccentFor(string pullRequest)
     {
-        string[] palette = ["#2563eb", "#16a34a", "#db2777", "#ea580c", "#7c3aed", "#0891b2"];
-        var hash = 0;
-        foreach (var c in environmentName)
+        if (!int.TryParse(pullRequest, out var number))
         {
-            hash = (hash * 31 + c) % 1000003;
+            return "#2563eb";
         }
 
-        return palette[Math.Abs(hash) % palette.Length];
+        string[] palette = ["#db2777", "#16a34a", "#ea580c", "#7c3aed", "#0891b2"];
+        return palette[Math.Abs(number) % palette.Length];
     }
 }

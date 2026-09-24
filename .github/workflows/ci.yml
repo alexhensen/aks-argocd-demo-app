@@ -103,6 +103,7 @@ jobs:
           SHA: ${{ github.sha }}
         run: |
           sed -i "s|tag: sha-.*|tag: sha-$SHA|" bootstrap/application-main.yaml
+          sed -i "s|commitSha: \".*\"|commitSha: \"$SHA\"|" bootstrap/application-main.yaml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           if git diff --quiet; then
