@@ -56,7 +56,7 @@ jobs:
           push: true
           tags: |
             ${{ env.IMAGE }}:${{ steps.tag.outputs.tag }}
-            ${{ env.IMAGE }}:latest
+            ${{ github.event_name == 'push' && format('{0}:latest', env.IMAGE) || '' }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
