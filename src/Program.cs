@@ -6,6 +6,15 @@ builder.Services.AddSingleton<CountryStore>();
 
 var app = builder.Build();
 
+// Demo/preview omgevingen mogen nooit in zoekmachines belanden. Dit gebeurt
+// op app-niveau (i.p.v. via een ingress-snippet) omdat de ingress-nginx
+// installatie snippet-annotaties uitschakelt (CVE-2021-25742/25743).
+app.Use(async (context, next) =>
+{
+    context.Response.Headers["X-Robots-Tag"] = "noindex, nofollow";
+    await next();
+});
+
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
