@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GitOps Demo</title>
+  <style>
+    :root { --accent: #2563eb; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      background: #0f172a;
+      color: #e2e8f0;
+      min-height: 100vh;
+    }
+    header {
+      background: var(--accent);
+      padding: 2.5rem 2rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,.35);
+    }
+    header h1 { margin: 0 0 .4rem; font-size: 2.6rem; letter-spacing: -.02em; }
+    header p { margin: 0; opacity: .9; font-size: 1.05rem; }
+    main { max-width: 900px; margin: 0 auto; padding: 2rem; }
+    .facts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+    .fact {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-left: 4px solid var(--accent);
+      border-radius: 10px;
+      padding: 1rem 1.2rem;
+    }
+    .fact span { display: block; font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: #94a3b8; }
+    .fact strong { display: block; margin-top: .35rem; font-size: 1.15rem; word-break: break-all; }
+    h2 { font-size: 1.3rem; margin: 0 0 1rem; }
+    form { display: flex; gap: .6rem; margin-bottom: 1.2rem; }
+    input {
+      flex: 1; padding: .8rem 1rem; border-radius: 8px;
+      border: 1px solid #334155; background: #1e293b; color: #e2e8f0; font-size: 1rem;
+    }
+    input:focus { outline: 2px solid var(--accent); }
+    button {
+      padding: .8rem 1.4rem; border: none; border-radius: 8px;
+      background: var(--accent); color: #fff; font-size: 1rem; font-weight: 600; cursor: pointer;
+    }
+    ul { list-style: none; padding: 0; margin: 0; }
+    li {
+      display: flex; justify-content: space-between; align-items: center;
+      background: #1e293b; border: 1px solid #334155; border-radius: 8px;
+      padding: .85rem 1.1rem; margin-bottom: .55rem;
+    }
+    li button { background: transparent; color: #f87171; font-size: .85rem; padding: .3rem .5rem; }
+    footer { text-align: center; padding: 2rem; color: #64748b; font-size: .85rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1 id="envName">...</h1>
+    <p>Uitgerold door Argo CD vanuit GitHub</p>
+  </header>
+
+  <main>
+    <div class="facts">
+      <div class="fact"><span>Pull request</span><strong id="pr">-</strong></div>
+      <div class="fact"><span>Commit</span><strong id="sha">-</strong></div>
+      <div class="fact"><span>Image tag</span><strong id="tag">-</strong></div>
+      <div class="fact"><span>Pod</span><strong id="host">-</strong></div>
+    </div>
+
+    <h2>Landen in deze omgeving</h2>
+    <form id="addForm">
+      <input id="name" placeholder="Voeg een land toe..." autocomplete="off" required />
+      <button type="submit">Toevoegen</button>
+    </form>
+    <ul id="list"></ul>
+  </main>
+
+  <footer>Data staat alleen in deze omgeving &mdash; elke preview start met dezelfde seed.</footer>
+
+  <script>
+    async function loadInfo() {
+      const info = await (await fetch('/api/info')).json();
+      document.documentElement.style.setProperty('--accent', info.accent);
+      document.getElementById('envName').textContent = info.environmentName;
+      document.getElementById('pr').textContent = info.pullRequest;
+      document.getElementById('sha').textContent = info.commitSha.slice(0, 12);
+      document.getElementById('tag').textContent = info.imageTag;
+      document.getElementById('host').textContent = location.hostname.split('.')[0];
+      document.title = info.environmentName + ' — GitOps Demo';
+    }
+
+    async function loadCountries() {
+      const countries = await (await fetch('/api/countries')).json();
+      const list = document.getElementById('list');
+      list.innerHTML = '';
+      for (const country of countries) {
+        const li = document.createElement('li');
+        const label = document.createElement('span');
+        label.textContent = country.name;
+        const remove = document.createElement('button');
+        remove.textContent = 'Verwijderen';
+        remove.addEventListener('click', async () => {
+          await fetch('/api/countries/' + country.id, { method: 'DELETE' });
+          loadCountries();
+        });
+        li.append(label, remove);
+        list.appendChild(li);
+      }
+    }
+
+    document.getElementById('addForm').addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const input = document.getElementById('name');
+      await fetch('/api/countries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: input.value })
+      });
+      input.value = '';
+      loadCountries();
+    });
+
+    loadInfo();
+    loadCountries();
+  </script>
+</body>
+</html>

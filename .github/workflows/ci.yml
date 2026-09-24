@@ -1,0 +1,87 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build and test
+        run: dotnet build src/DemoApp.csproj -c Release
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The commit SHA is the contract between CI and Argo CD: the ApplicationSet
+      # deploys exactly sha-<head_sha>, so a preview can never run untested code.
+      - name: Resolve image tag
+        id: tag
+        run: |
+          SHA="${{ github.event.pull_request.head.sha || github.sha }}"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+          echo "tag=sha-$SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Build and push image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.IMAGE }}:${{ steps.tag.outputs.tag }}
+            ${{ env.IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Labelling only after a successful push is what gates the preview:
+      # Argo CD's pull request generator filters on this label.
+      - name: Enable preview environment
+        if: github.event_name == 'pull_request'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: gh pr edit "$PR" --add-label preview --repo "${{ github.repository }}"
+
+      - name: Comment preview URL
+        if: github.event_name == 'pull_request' && vars.PREVIEW_DOMAIN != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          URL="http://pr-$PR.${{ vars.PREVIEW_DOMAIN }}"
+          gh pr comment "$PR" --repo "${{ github.repository }}" --edit-last --create-if-none --body \
+            "### Preview omgeving
+
+          | | |
+          |---|---|
+          | URL | $URL |
+          | Image | \`${{ steps.tag.outputs.tag }}\` |
+
+          Argo CD rolt deze commit uit; de omgeving verdwijnt automatisch zodra deze PR sluit."
