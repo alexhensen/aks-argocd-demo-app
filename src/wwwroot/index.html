@@ -89,8 +89,10 @@
       document.getElementById('envName').textContent = info.environmentName;
       document.getElementById('pr').textContent = info.pullRequest;
       document.getElementById('sha').textContent = info.commitSha.slice(0, 12);
-      document.getElementById('tag').textContent = info.imageTag;
-      document.getElementById('host').textContent = location.hostname.split('.')[0];
+      document.getElementById('tag').textContent = info.imageTag.length > 16
+        ? info.imageTag.slice(0, 16) + '…'
+        : info.imageTag;
+      document.getElementById('host').textContent = info.podName;
       document.title = info.environmentName + ' — GitOps Demo';
     }
 

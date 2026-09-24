@@ -33,3 +33,5 @@ zet daarna het label `preview`, waarop Argo CD reageert. De URL verschijnt als
 comment op de pull request.
 
 De uitrol zelf staat in [aks-argocd-demo-gitops](https://github.com/alexhensen/aks-argocd-demo-gitops).
+Het draaiboek voor de presentatie staat in
+[DEMO.md](https://github.com/alexhensen/aks-argocd-demo-gitops/blob/main/DEMO.md).
