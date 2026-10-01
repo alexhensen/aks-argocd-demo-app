@@ -57,7 +57,7 @@ internal sealed class CountryStore
 
     public CountryStore()
     {
-        foreach (var name in new[] { "Nederland", "België", "Luxemburg" })
+        foreach (var name in new[] { "Nederland", "België", "Luxemburg", "Duitsland", "Frankrijk" })
         {
             Add(name);
         }
