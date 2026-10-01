@@ -14,4 +14,4 @@ jobs:
           echo "--- poort 443 test ---"
           curl -sk -o /dev/null -w "HTTP %{http_code}\n" --max-time 15 https://app.demo.alexhensen.com/ || true
           echo "--- direct IP test poort 80 ---"
-          curl -v --max-time 15 http://9.163.186.85/ -H "Host: app.demo.alexhensen.com" || true
+          curl -v --max-time 15 http://20.76.137.4/ -H "Host: app.demo.alexhensen.com" || true
